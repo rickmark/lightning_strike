@@ -1,0 +1,56 @@
+<html>
+<head>
+<title>BadUSB on the Web</title>
+</head>
+<body>
+  <form action="#">
+  <a id="gesture" href="#">Click Me</a>
+</form>
+<script>
+
+var device = null;
+
+document.getElementById('gesture').onclick = function() {
+navigator.usb.requestDevice({ filters: [{ vendorId: 0x05ac, productId: 0x12A8 }] })
+.then(theDevice => {
+  device = theDevice
+  console.log(device.productName);
+  console.log(device.manufacturerName);
+  console.log("SerialNumber: " + device.serialNumber);
+
+  device.open().then(function() {
+    console.log("Device Opened");
+
+    let configurationId = 5;
+
+    device.selectConfiguration(configurationId).then(function() {
+      console.log("Set Configuration to " + configurationId);
+      if (device.configuration != null) {
+        console.log("Curent Configuration: " + device.configuration.configurationValue);
+
+        device.configurations.forEach(configuration => {
+          console.log("Configuration " + configuration.configurationValue + " : " + (configuration.configurationName || "unnamed"));
+          configuration.interfaces.forEach(deviceInterface => {
+            console.log("Interface " + deviceInterface.interfaceNumber + "(" + (deviceInterface.claimed ? "claimed" : "unclaimed") + ") : " + (configuration.configurationName || "unnamed"));
+            deviceInterface.alternates.forEach(alternate => {
+              console.log("Alternate " + alternate.alternateSetting + " : Class " + alternate.interfaceClass + " : SubClass " + alternate.interfaceSubclass + " : Protocol " + alternate.interfaceProtocol + " - " + alternate.interfaceName);
+            });
+          })
+        });
+
+        device.claimInterface(0).then(function() {
+          console.log("Interface Claimed");
+        })
+        .catch(error => { console.log(error.name + " : " + error.message) });
+      }
+    })
+    .catch(error => { console.log(error.name + " : " + error.message) });
+  })
+  .catch(error => { console.log(error.name + " : " + error.message) });
+})
+.catch(error => { console.log(error.name + " : " + error.message); });
+}
+
+</script>
+</body>
+</html>
